@@ -1,6 +1,6 @@
-# PDF 스캔북 뷰어
+# PDF 북 뷰어
 
-스캔한 책 PDF 전용 웹 뷰어. pdf.js(4.10.38, `vendor/pdfjs/`) 렌더링 + 만화리더식 UX.
+PDF 전용 웹 뷰어. pdf.js(4.10.38, `vendor/pdfjs/`) 렌더링 + 만화리더식 UX.
 설치 없이 브라우저에서 동작하며, PDF는 기기 밖으로 업로드되지 않습니다(브라우저 안에서만 읽음).
 
 **바로 쓰기:** https://starry8004.github.io/pdf-scanbook-viewer/
