@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app" content="pdf-scanbook-viewer">
+<title>PDF 스캔북 뷰어</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body class="side-closed">
+
+<header id="bar">
+  <button id="btnSide" title="서재 (B) / 썸네일 (T)">☰</button>
+  <div id="title">PDF 스캔북 뷰어</div>
+
+  <div class="grp">
+    <button id="btnPrev" title="이전 (←, PageUp)">‹</button>
+    <input id="pageInput" inputmode="numeric" title="쪽 번호 입력 후 Enter (Ctrl+G)">
+    <span id="pageTotal">/ 0</span>
+    <button id="btnNext" title="다음 (→, PageDown, Space)">›</button>
+  </div>
+
+  <div class="grp">
+    <button data-mode="single" title="한 쪽 보기 (D로 전환)">한쪽</button>
+    <button data-mode="double" title="두 쪽 펼침 (D)">두쪽</button>
+    <button data-mode="scroll" title="연속 스크롤 (V)">스크롤</button>
+  </div>
+
+  <div class="grp">
+    <button id="btnZoomOut" title="축소 (-)">−</button>
+    <span id="zoomLabel">100%</span>
+    <button id="btnZoomIn" title="확대 (+)">+</button>
+    <button data-fit="width" title="폭 맞춤 (W)">폭</button>
+    <button data-fit="page" title="쪽 맞춤 (P)">쪽</button>
+    <button data-fit="actual" title="원본 100% (0)">1:1</button>
+  </div>
+
+  <div class="grp">
+    <button id="btnCover" title="두쪽에서 표지 단독 (Shift+D)">표지</button>
+    <button id="btnRtl" title="오른쪽→왼쪽 넘김 (R)">RTL</button>
+    <button id="btnCrop" title="여백 자동 자르기 (C)">여백✂</button>
+    <button id="btnRotate" title="90° 회전 (Shift+R)">⟳</button>
+    <button id="btnFilter" title="반전·밝기·대비 (I, [ ], { })">🎚</button>
+  </div>
+
+  <div class="grp">
+    <button id="btnOpen" title="파일 열기 (O, Ctrl+O)">열기</button>
+    <button id="btnFull" title="전체화면 (F, Enter)">⛶</button>
+    <button id="btnHelp" title="단축키 (?)">?</button>
+  </div>
+</header>
+
+<div id="fltPanel" hidden>
+  <label><input type="checkbox" id="fltInvert"> 반전 (다크모드) <kbd>I</kbd></label>
+  <label>밝기 <input type="range" id="fltBright" min="40" max="160" step="5"> <span id="fltBrightV"></span></label>
+  <label>대비 <input type="range" id="fltContrast" min="50" max="250" step="5"> <span id="fltContrastV"></span></label>
+  <button id="fltReset">초기화</button>
+</div>
+
+<div id="main">
+  <aside id="side">
+    <div class="tabs">
+      <button data-tab="library">서재</button>
+      <button data-tab="thumbs">썸네일</button>
+    </div>
+    <div id="libPane">
+      <div class="lib-actions">
+        <button id="btnConnect">📁 폴더 연결</button>
+        <button id="btnRescan" title="다시 읽기">↻</button>
+      </div>
+      <div id="libHint" class="hint">Google Drive 폴더(G:\내 드라이브\…)를 연결하세요.</div>
+      <input id="libSearch" placeholder="책 검색" autocomplete="off">
+      <div class="sec-title">최근 읽은 책</div>
+      <div id="recentList"></div>
+      <div class="sec-title">서재</div>
+      <div id="libList"></div>
+    </div>
+    <div id="thumbPane" hidden></div>
+  </aside>
+
+  <div id="stage" tabindex="0">
+    <div id="welcome">
+      <div class="welcome-card">
+        <h1>📖 PDF 스캔북 뷰어</h1>
+        <p class="muted">PDF를 끌어다 놓거나 아래에서 고르세요.</p>
+        <div class="welcome-actions">
+          <button class="big" id="wConnect">📁 Google Drive 폴더 연결</button>
+          <button class="big" id="wOpen">📄 파일 열기</button>
+        </div>
+        <p class="muted small" id="wHintFolder">폴더 선택 창에서 Google Drive 안의 책 폴더를 고르면 서재로 등록됩니다 (Windows <b>G:\내 드라이브</b>, Mac <b>Finder › Google Drive</b>). 다음부터는 자동으로 연결됩니다.</p>
+        <p class="muted small" id="wHintFile" hidden>이 브라우저는 폴더 연결을 지원하지 않습니다. <b>파일 열기 → 탐색 › Google Drive</b>에서 책을 고르세요.</p>
+        <div id="welcomeRecent"></div>
+        <p class="muted small"><kbd>?</kbd> 를 누르면 단축키를 볼 수 있습니다.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="progress" title=""><div id="progressFill"></div></div>
+<div id="toast"></div>
+<div id="loading" hidden><div class="spinner"></div><div id="loadingText">불러오는 중…</div></div>
+
+<div id="help" hidden>
+  <div class="help-card">
+    <h2>단축키</h2>
+    <h3>쪽 넘기기</h3>
+    <dl>
+      <dt><kbd>→</kbd> <kbd>←</kbd> / <kbd>L</kbd> <kbd>H</kbd></dt><dd>오른쪽 / 왼쪽 쪽 (RTL이면 반대)</dd>
+      <dt><kbd>Space</kbd> <kbd>PageDown</kbd></dt><dd>다음 (확대 중이면 먼저 아래로 스크롤)</dd>
+      <dt><kbd>Shift+Space</kbd> <kbd>PageUp</kbd></dt><dd>이전</dd>
+      <dt><kbd>Shift+J</kbd> <kbd>N</kbd> / <kbd>Shift+K</kbd> <kbd>Shift+N</kbd></dt><dd>다음 / 이전 쪽</dd>
+      <dt><kbd>↓</kbd> <kbd>↑</kbd> / <kbd>J</kbd> <kbd>K</kbd></dt><dd>조금씩 스크롤</dd>
+      <dt><kbd>Home</kbd> <kbd>G</kbd><kbd>G</kbd></dt><dd>첫 쪽</dd>
+      <dt><kbd>End</kbd> <kbd>Shift+G</kbd></dt><dd>마지막 쪽</dd>
+      <dt>숫자 + <kbd>Enter</kbd></dt><dd>그 쪽으로 이동 (예: 120 Enter)</dd>
+      <dt><kbd>Ctrl+G</kbd></dt><dd>쪽 번호 입력칸</dd>
+      <dt>마우스</dt><dd>화면 왼쪽·오른쪽 클릭 = 넘기기, 가운데 클릭 = 메뉴 숨김, 휠 = 넘기기/스크롤, 드래그 = 이동</dd>
+    </dl>
+    <h3>확대·보기</h3>
+    <dl>
+      <dt><kbd>+</kbd> <kbd>-</kbd> / <kbd>Ctrl+휠</kbd></dt><dd>확대 / 축소</dd>
+      <dt><kbd>W</kbd> (<kbd>S</kbd>)</dt><dd>폭 맞춤</dd>
+      <dt><kbd>P</kbd> (<kbd>A</kbd>)</dt><dd>쪽 맞춤</dd>
+      <dt><kbd>0</kbd></dt><dd>원본 100%</dd>
+      <dt><kbd>D</kbd></dt><dd>한쪽 ↔ 두쪽 펼침</dd>
+      <dt><kbd>Shift+D</kbd></dt><dd>두쪽: 표지 단독 켜기/끄기</dd>
+      <dt><kbd>V</kbd></dt><dd>연속 스크롤 보기</dd>
+      <dt><kbd>R</kbd></dt><dd>RTL (오른쪽→왼쪽)</dd>
+      <dt><kbd>Shift+R</kbd></dt><dd>90° 회전</dd>
+      <dt><kbd>C</kbd></dt><dd>여백 자동 자르기</dd>
+      <dt><kbd>I</kbd></dt><dd>반전 (다크모드)</dd>
+      <dt><kbd>[</kbd> <kbd>]</kbd> / <kbd>{</kbd> <kbd>}</kbd></dt><dd>밝기 / 대비</dd>
+    </dl>
+    <h3>화면</h3>
+    <dl>
+      <dt><kbd>F</kbd> <kbd>Enter</kbd></dt><dd>전체화면</dd>
+      <dt><kbd>U</kbd></dt><dd>메뉴 숨기기 (몰입 모드)</dd>
+      <dt><kbd>B</kbd> / <kbd>T</kbd></dt><dd>서재 / 썸네일 패널</dd>
+      <dt><kbd>O</kbd></dt><dd>파일 열기</dd>
+      <dt><kbd>?</kbd> <kbd>Esc</kbd></dt><dd>도움말 열기/닫기</dd>
+    </dl>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+<script type="module" src="viewer.js"></script>
+</body>
+</html>
